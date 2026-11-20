@@ -1,0 +1,10 @@
+pdfplumber
+pdfminer.six
+pypdf
+pdf2image
+pytesseract
+pillow
+mammoth
+markdownify
+beautifulsoup4
+striprtf

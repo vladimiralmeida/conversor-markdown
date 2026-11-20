@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversor para Markdown - Vladimir Almeida</title>
+<style>
+:root{
+  --bg:#f4f6fa; --surface:#ffffff; --surface2:#f0f3f9; --line:#e1e6ef; --text:#14202f; --muted:#5d6b80;
+  --accent:#2563eb; --accent-ink:#ffffff; --accent-soft:#e8f0ff; --ok:#16a34a; --ok-soft:#e6f6ec;
+  --warn:#b45309; --warn-soft:#fff4e0; --err:#dc2626; --err-soft:#fdecec; --shadow:0 1px 2px rgba(16,32,60,.06),0 8px 24px rgba(16,32,60,.06);
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0c1522; --surface:#132133; --surface2:#182a40; --line:#243a55; --text:#e7eef8; --muted:#9db0c8;
+  --accent:#4c8dff; --accent-ink:#06101e; --accent-soft:#17315a; --ok:#34c76b; --ok-soft:#123826; --warn:#f2a03d; --warn-soft:#3a2a10; --err:#ff6b6b; --err-soft:#3d1a1a; --shadow:0 8px 28px rgba(0,0,0,.35);}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:28px 20px 90px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#6d5df6);display:grid;place-items:center;color:#fff;font-weight:700;font-size:17px;letter-spacing:-.5px;box-shadow:var(--shadow)}
+h1{font-size:21px;margin:0;letter-spacing:-.2px}
+header p{margin:0;color:var(--muted);font-size:13.5px}
+.chips{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.chip{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);display:inline-flex;align-items:center;gap:5px}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+.chip.off i{background:var(--err)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 22px;margin-bottom:16px}
+.step{display:flex;align-items:center;gap:10px;margin:0 0 14px}
+.step b{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12.5px}
+.step h2{margin:0;font-size:15.5px}
+.step small{color:var(--muted);margin-left:auto;font-size:12.5px}
+.hidden{display:none!important}
+
+/* dropzone */
+.drop{border:2px dashed var(--line);border-radius:12px;padding:34px 20px;text-align:center;cursor:pointer;transition:.15s;background:var(--surface2)}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop svg{width:38px;height:38px;color:var(--accent);margin-bottom:6px}
+.drop strong{display:block;font-size:16px}
+.drop span{color:var(--muted);font-size:13px}
+.file{display:flex;align-items:center;gap:14px}
+.file .ico{width:42px;height:42px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:11px}
+.file .nm{font-weight:600;word-break:break-all}
+.file .meta{color:var(--muted);font-size:13px}
+.link{margin-left:auto;background:none;border:0;color:var(--accent);cursor:pointer;font:inherit;font-size:13.5px;padding:6px 8px;border-radius:8px}
+.link:hover{background:var(--accent-soft)}
+
+/* option cards */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:700px){.grid3,.grid2{grid-template-columns:1fr}.chips{display:none}}
+.opt{position:relative;text-align:left;font:inherit;color:inherit;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;cursor:pointer;transition:.12s}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{opacity:.45;cursor:not-allowed}
+.opt.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.opt strong{display:block;font-size:14.5px}
+.opt span{display:block;color:var(--muted);font-size:12.8px;margin-top:2px}
+.tag{position:absolute;top:8px;right:8px;font-size:10.5px;background:var(--ok-soft);color:var(--ok);padding:1px 7px;border-radius:99px;font-weight:600}
+.lbl{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600;margin:16px 0 8px}
+.lbl:first-child{margin-top:0}
+
+.note{border-radius:10px;padding:10px 13px;font-size:13.5px;margin-top:12px}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.note.err{background:var(--err-soft);color:var(--err)}
+details.adv{margin-top:14px}
+details.adv summary{cursor:pointer;color:var(--accent);font-size:13.5px;user-select:none}
+.advgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:12px}
+.advgrid label{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+select,input[type=search]{font:inherit;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--text)}
+.chk{flex-direction:row!important;align-items:center;gap:8px!important;color:var(--text)!important;font-size:13.5px!important}
+
+/* list */
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.tools input{flex:1;min-width:180px}
+.btn{font:inherit;font-size:13.5px;padding:8px 13px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.primary:hover{filter:brightness(1.08);color:var(--accent-ink)}
+.btn.big{padding:13px 22px;font-size:16px;border-radius:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.list{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:11px}
+.row{display:flex;gap:11px;align-items:center;padding:9px 13px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--surface2)}
+.row input{width:17px;height:17px;accent-color:var(--accent);flex:none}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .t small{color:var(--muted);font-size:12.3px}
+.row .r{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.stars{color:#e0a100;letter-spacing:1px;font-size:12px}
+.count{color:var(--muted);font-size:13px;margin-left:auto}
+
+/* action bar */
+.actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.summary{color:var(--muted);font-size:13.5px;flex:1;min-width:200px}
+.summary b{color:var(--text)}
+
+/* progress */
+.pct{font-size:56px;font-weight:700;letter-spacing:-2px;font-variant-numeric:tabular-nums;line-height:1}
+.pct small{font-size:26px;color:var(--muted);font-weight:600}
+.bar{height:12px;background:var(--surface2);border-radius:99px;overflow:hidden;margin:16px 0 12px;border:1px solid var(--line)}
+.bar>div{height:100%;width:0;background:linear-gradient(90deg,#2563eb,#6d5df6);border-radius:99px;transition:width .4s ease}
+.bar.indet>div{width:35%!important;animation:ind 1.3s infinite ease-in-out}
+@keyframes ind{0%{margin-left:-35%}100%{margin-left:100%}}
+.ptop{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+.pinfo{color:var(--muted);font-size:13.5px}
+.etapa{font-weight:600;font-size:15px}
+.logbox{margin-top:12px;background:var(--surface2);border-radius:10px;padding:10px 12px;font:12.5px/1.6 Consolas,monospace;max-height:150px;overflow:auto;white-space:pre-wrap;color:var(--muted)}
+
+/* done */
+.done{text-align:center;padding:10px 0 4px}
+.okmark{width:58px;height:58px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;margin:0 auto 12px}
+.okmark svg{width:30px;height:30px}
+.done h3{margin:0 0 4px;font-size:20px}
+.path{font:13px Consolas,monospace;background:var(--surface2);border-radius:8px;padding:7px 11px;display:inline-block;margin:8px 0;word-break:break-all;max-width:100%}
+.stats{display:flex;gap:22px;justify-content:center;margin:10px 0 18px;color:var(--muted);font-size:13.5px;flex-wrap:wrap}
+.stats b{color:var(--text)}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+footer{margin-top:26px;text-align:center;color:var(--muted);font-size:12.5px}
+footer button{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;box-shadow:var(--shadow);z-index:9}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">MD</div>
+    <div><h1>Conversor para Markdown</h1><p>Processos do PJe · PDFs · DOCX e outros formatos</p></div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <!-- 1. Arquivo -->
+  <section class="card" id="sArquivo">
+    <div class="step"><b>1</b><h2>Arquivo</h2><small id="aceitos"></small></div>
+    <div class="drop" id="drop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+      <strong>Arraste o arquivo aqui ou clique para escolher</strong>
+      <span>PDF, DOCX, ODT, RTF, HTML, EPUB, PPTX, TXT</span>
+    </div>
+    <input type="file" id="fileIn" class="hidden">
+    <div class="file hidden" id="fileBox">
+      <div class="ico" id="fIco">PDF</div>
+      <div><div class="nm" id="fNome"></div><div class="meta" id="fMeta"></div></div>
+      <button class="link" id="trocar">Trocar arquivo</button>
+    </div>
+    <div class="note err hidden" id="upErr"></div>
+    <div class="note" id="upProg" style="display:none">
+      <div class="bar" style="margin:0"><div id="upBar"></div></div>
+      <div class="pinfo" style="margin-top:6px" id="upTxt">Enviando…</div>
+    </div>
+  </section>
+
+  <!-- 2 e 3. Configuração -->
+  <div id="config" class="hidden">
+    <section class="card">
+      <div class="step"><b>2</b><h2>Que tipo de arquivo é este?</h2></div>
+      <div class="grid3" id="tipos">
+        <button class="opt" data-tipo="pje"><strong>Processo do PJe</strong><span>Autos exportados do PJe, separados por peça.</span></button>
+        <button class="opt" data-tipo="pdf"><strong>PDF genérico</strong><span>Livros, artigos, contratos, digitalizações.</span></button>
+        <button class="opt" data-tipo="doc"><strong>Documento</strong><span>DOCX, ODT, RTF, HTML, EPUB, PPTX, TXT.</span></button>
+      </div>
+    </section>
+
+    <section class="card" id="sModo">
+      <div class="step"><b>3</b><h2>Como converter?</h2></div>
+      <div class="lbl">Abrangência</div>
+      <div class="grid2" id="escopo">
+        <button class="opt on" data-v="integra"><strong>Íntegra</strong><span>Converte o documento inteiro.</span></button>
+        <button class="opt" data-v="selecao"><strong id="selTitulo">Escolher peças</strong><span id="selDesc">Você marca o que entra no arquivo final.</span></button>
+      </div>
+      <div class="lbl">Leitura do texto</div>
+      <div class="grid2" id="leitura">
+        <button class="opt on" data-v="0"><strong>Sem OCR</strong><span>Usa o texto selecionável do PDF. Rápido.</span></button>
+        <button class="opt" data-v="1" id="optOcr"><strong>Com OCR</strong><span>Reconhece o texto nas imagens. Para digitalizações; mais lento.</span></button>
+      </div>
+      <div class="note warn hidden" id="avisoScan">Este PDF parece <b>digitalizado</b> (sem texto selecionável). Recomendo usar <b>Com OCR</b>.</div>
+      <div class="note err hidden" id="avisoTess">O Tesseract não foi encontrado: a opção com OCR está indisponível.</div>
+      <details class="adv" id="adv">
+        <summary>Opções avançadas</summary>
+        <div class="advgrid">
+          <label data-ocr>Idioma do OCR<select id="idioma"><option value="por">Português</option><option value="eng">Inglês</option><option value="por+eng">Português + Inglês</option></select></label>
+          <label data-ocr>Resolução do OCR<select id="dpi"><option>200</option><option>300</option><option>400</option></select></label>
+          <label data-gen>Colunas<select id="colunas"><option value="auto">Detectar (artigos)</option><option value="1">1 coluna</option><option value="2">2 colunas</option></select></label>
+          <label class="chk" data-ocr><input type="checkbox" id="preprocess"> Melhorar contraste antes do OCR</label>
+          <label class="chk" data-gen data-sel><input type="checkbox" id="porcap"> Um arquivo .md por capítulo</label>
+          <label class="chk" data-gen><input type="checkbox" id="imagens"> Extrair imagens do PDF</label>
+        </div>
+      </details>
+    </section>
+
+    <section class="card hidden" id="sLista">
+      <div class="step"><b>4</b><h2 id="listaTit">Escolha as peças</h2><small id="listaSub"></small></div>
+      <div id="listaVazia">
+        <p style="margin:0 0 12px;color:var(--muted)" id="listaMsg"></p>
+        <button class="btn primary" id="btnAnalisar">Analisar documento</button>
+      </div>
+      <div id="listaBox" class="hidden">
+        <div class="tools">
+          <input type="search" id="busca" placeholder="Filtrar por nome, tipo ou data…">
+          <button class="btn" id="bTodas">Todas</button>
+          <button class="btn" id="bNenhuma">Nenhuma</button>
+          <button class="btn hidden" id="bRel">★ Relevantes</button>
+        </div>
+        <div class="list" id="lista"></div>
+        <div class="tools" style="margin:10px 0 0"><span class="count" id="contagem"></span></div>
+      </div>
+    </section>
+
+    <section class="card actions" id="sGo">
+      <div class="summary" id="resumo"></div>
+      <button class="btn primary big" id="btnGo">Converter para Markdown</button>
+    </section>
+  </div>
+
+  <!-- Progresso -->
+  <section class="card hidden" id="sProg">
+    <div class="step"><b>●</b><h2 id="pTitulo">Convertendo…</h2></div>
+    <div class="ptop"><div class="pct"><span id="pPct">0</span><small>%</small></div><div><div class="etapa" id="pEtapa"></div><div class="pinfo" id="pTempo"></div></div></div>
+    <div class="bar" id="pBar"><div></div></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="link" id="btnLog" style="margin-left:0;padding-left:0">Mostrar detalhes</button>
+      <button class="btn" id="btnCancel" style="margin-left:auto">Cancelar</button>
+    </div>
+    <div class="logbox hidden" id="pLog"></div>
+  </section>
+
+  <!-- Concluído -->
+  <section class="card hidden" id="sDone">
+    <div class="done">
+      <div class="okmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h3>Conversão concluída</h3>
+      <div class="pinfo">Salvo na pasta Downloads</div>
+      <div class="path" id="dPath"></div>
+      <div class="stats" id="dStats"></div>
+      <div class="btns">
+        <button class="btn primary" id="bAbrir">Abrir arquivo</button>
+        <button class="btn" id="bPasta">Mostrar na pasta</button>
+        <button class="btn" id="bCopiar">Copiar caminho</button>
+        <button class="btn" id="bNovo">Nova conversão</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card hidden" id="sErr">
+    <div class="note err" id="eMsg" style="margin:0 0 14px"></div>
+    <button class="btn" id="bVoltar">Voltar e ajustar</button>
+  </section>
+
+  <footer>Tudo roda no seu computador — nenhum arquivo sai da máquina. <button id="bSair">Encerrar servidor</button><br><span style="display:block;margin-top:6px">Desenvolvido por Vladimir Almeida com Claude Code em Novembro de 2026</span></footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const S = { up:null, tipo:null, escopo:'integra', ocr:false, itens:null, sel:new Set(), env:null, job:null, polling:null, ultimoJob:null, analisadoCfg:null };
+
+const api = async (url, body) => {
+  const r = await fetch(url, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.erro || ('Erro '+r.status));
+  return j;
+};
+const fmtTam = b => b>1048576 ? (b/1048576).toFixed(1)+' MB' : Math.max(1,Math.round(b/1024))+' KB';
+const fmtT = s => { s=Math.round(s); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+const esc = t => String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m){ const t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.append(t); setTimeout(()=>t.remove(),2200); }
+function show(id, on=true){ $(id).classList.toggle('hidden', !on); }
+
+/* ── ambiente ── */
+(async()=>{
+  try{
+    S.env = await api('/api/status');
+    $('#chips').innerHTML =
+      `<span class="chip ${S.env.tesseract?'':'off'}"><i></i>Tesseract</span>`+
+      `<span class="chip ${S.env.poppler?'':'off'}"><i></i>Poppler</span>`;
+    $('#aceitos').textContent = 'Saída: ' + S.env.downloads;
+    if(!S.env.tesseract){ $('#optOcr').disabled = true; show('#avisoTess'); }
+  }catch(e){}
+})();
+
+/* ── upload ── */
+const drop = $('#drop'), fileIn = $('#fileIn');
+drop.onclick = () => fileIn.click();
+['dragenter','dragover'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop', ev => { if(ev.dataTransfer.files[0]) enviar(ev.dataTransfer.files[0]); });
+fileIn.onchange = () => { if(fileIn.files[0]) enviar(fileIn.files[0]); fileIn.value=''; };
+document.addEventListener('dragover', e=>e.preventDefault());
+document.addEventListener('drop', e=>{ if(!drop.contains(e.target)){ e.preventDefault(); if(e.dataTransfer.files[0] && !S.job) enviar(e.dataTransfer.files[0]); } });
+$('#trocar').onclick = () => { descartar(); resetTudo(); };
+
+function enviar(file){
+  show('#upErr', false);
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/upload?nome=' + encodeURIComponent(file.name));
+  $('#upProg').style.display='block'; $('#upBar').style.width='0';
+  xhr.upload.onprogress = e => { if(e.lengthComputable){ $('#upBar').style.width=(e.loaded/e.total*100)+'%'; $('#upTxt').textContent='Enviando… '+Math.round(e.loaded/e.total*100)+'%'; } };
+  xhr.onload = () => {
+    $('#upProg').style.display='none';
+    let j={}; try{ j=JSON.parse(xhr.responseText) }catch(e){}
+    if(xhr.status!==200){ $('#upErr').textContent = j.erro || 'Falha no envio.'; show('#upErr'); return; }
+    descartar(true); S.up = j; arquivoPronto();
+  };
+  xhr.onerror = () => { $('#upProg').style.display='none'; $('#upErr').textContent='Falha na conexão com o servidor local.'; show('#upErr'); };
+  xhr.send(file);
+}
+function descartar(manter){ if(S.up && !manter) api('/api/descartar',{id:S.up.id}).catch(()=>{}); }
+
+function arquivoPronto(){
+  const u = S.up;
+  show('#drop', false); show('#fileBox');
+  $('#fIco').textContent = u.ext.replace('.','').toUpperCase();
+  $('#fNome').textContent = u.nome;
+  $('#fMeta').textContent = fmtTam(u.tamanho) + (u.paginas ? ' · ' + u.paginas + ' páginas' : '');
+  show('#config');
+  const ehPdf = u.kind==='pdf';
+  $$('#tipos .opt').forEach(b => {
+    const t=b.dataset.tipo;
+    b.disabled = ehPdf ? t==='doc' : t!=='doc';
+    b.querySelector('.tag')?.remove();
+  });
+  S.tipo = ehPdf ? (u.pje ? 'pje' : 'pdf') : 'doc';
+  if(ehPdf){ const b=$(`#tipos [data-tipo="${S.tipo}"]`); b.insertAdjacentHTML('beforeend','<em class="tag" style="font-style:normal">detectado</em>'); }
+  S.escopo='integra'; S.ocr = ehPdf && u.escaneado && !!S.env?.tesseract; S.itens=null; S.sel=new Set(); S.analisadoCfg=null;
+  aplicarTipo(true);
+  setTimeout(()=>$('#config').scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+
+/* ── seleção de opções ── */
+$('#tipos').onclick = e => { const b=e.target.closest('.opt'); if(!b||b.disabled) return; S.tipo=b.dataset.tipo; S.itens=null; S.sel=new Set(); S.analisadoCfg=null; aplicarTipo(false); };
+$('#escopo').onclick = e => { const b=e.target.closest('.opt'); if(!b) return; S.escopo=b.dataset.v; aplicarTipo(false); };
+$('#leitura').onclick = e => { const b=e.target.closest('.opt'); if(!b||b.disabled) return; S.ocr=b.dataset.v==='1'; aplicarTipo(false); };
+['idioma','dpi','colunas','preprocess','porcap','imagens'].forEach(id => $('#'+id).addEventListener('change', ()=>{ if(['idioma','dpi','colunas','preprocess'].includes(id)) S.analisadoCfg=null; atualizar(); }));
+$('#adv').addEventListener('toggle',()=>{});
+
+function aplicarTipo(inicial){
+  const t=S.tipo, doc=t==='doc', pje=t==='pje';
+  $$('#tipos .opt').forEach(b=>b.classList.toggle('on', b.dataset.tipo===t));
+  show('#sModo', !doc);
+  if(!doc && inicial){
+    $('#idioma').value = pje ? 'por' : 'por+eng';
+    $('#dpi').value = pje ? '200' : '300';
+  } else if(!doc && !inicial && ['pje','pdf'].includes(t)) {
+    // troca de tipo: reaplica padrões
+    $('#idioma').value = pje ? 'por' : 'por+eng';
+    $('#dpi').value = pje ? '200' : '300';
+  }
+  $('#selTitulo').textContent = pje ? 'Escolher peças' : 'Escolher capítulos';
+  $('#selDesc').textContent = pje ? 'Você marca quais documentos do processo entram.' : 'Você marca quais capítulos/seções entram.';
+  $$('#escopo .opt').forEach(b=>b.classList.toggle('on', b.dataset.v===S.escopo));
+  $$('#leitura .opt').forEach(b=>b.classList.toggle('on', (b.dataset.v==='1')===S.ocr));
+  show('#avisoScan', !doc && S.up.escaneado && !S.ocr);
+  atualizar();
+}
+
+function cfg(){
+  return { id:S.up.id, tipo:S.tipo, escopo:S.escopo, ocr:S.ocr, idioma:$('#idioma').value, dpi:$('#dpi').value,
+    preprocess:$('#preprocess').checked, colunas:$('#colunas').value, por_capitulo:$('#porcap').checked,
+    imagens:$('#imagens').checked, selecao:[...S.sel] };
+}
+function chaveAnalise(){ const c=cfg(); return S.tipo==='pje' ? 'pje' : JSON.stringify([c.ocr,c.idioma,c.dpi,c.preprocess,c.colunas]); }
+
+function atualizar(){
+  const doc=S.tipo==='doc', pje=S.tipo==='pje', sel=S.escopo==='selecao';
+  // visibilidade das opções avançadas
+  $$('#adv [data-ocr]').forEach(e=>e.classList.toggle('hidden', !S.ocr));
+  $$('#adv [data-gen]').forEach(e=>e.classList.toggle('hidden', pje));
+  $$('#adv [data-sel]').forEach(e=>{ if(pje||!sel) e.classList.add('hidden'); });
+  show('#sLista', !doc && sel);
+  show('#bRel', pje);
+  if(!doc && sel){
+    $('#listaTit').textContent = pje ? 'Escolha as peças' : 'Escolha os capítulos';
+    const valida = S.itens && S.analisadoCfg===chaveAnalise();
+    show('#listaVazia', !valida); show('#listaBox', !!valida);
+    if(!valida){
+      $('#listaMsg').textContent = pje
+        ? 'Vou ler o índice do processo e listar as peças, com a relevância de cada uma (★★★ essencial · ★★☆ útil · ★☆☆ anexo).'
+        : (S.ocr ? 'O OCR será feito uma única vez agora e reaproveitado na conversão final. Pode levar alguns minutos.'
+                 : 'Vou detectar os capítulos e seções do PDF para você escolher.');
+      if(S.itens){ S.itens=null; }
+      // PJe e PDF sem OCR: análise rápida e automática
+      if(!S.analisando && (pje || !S.ocr)) analisar();
+    } else renderLista();
+  }
+  resumo();
+}
+function resumo(){
+  const doc=S.tipo==='doc', pje=S.tipo==='pje', sel=S.escopo==='selecao';
+  const nome = pje ? 'Processo PJe' : doc ? 'Documento' : 'PDF';
+  let r = `<b>${nome}</b> · ${doc ? 'conversão direta' : (sel?(pje?'peças selecionadas':'capítulos selecionados'):'íntegra') + ' · ' + (S.ocr?'com OCR':'sem OCR')}`;
+  if(!doc && sel && S.itens) r += ` · <b>${S.sel.size}</b> selecionada(s)`;
+  $('#resumo').innerHTML = r + '<br>Destino: Downloads';
+  $('#btnGo').disabled = (!doc && sel && (!S.itens || S.sel.size===0));
+}
+
+/* ── lista ── */
+$('#btnAnalisar').onclick = () => analisar();
+function stars(n){ return n===1?'★★★':n===2?'★★☆':'★☆☆'; }
+function renderLista(){
+  const pje=S.tipo==='pje', q=($('#busca').value||'').toLowerCase();
+  const itens = S.itens.filter(i => !q || (i.titulo+' '+(i.tipo||'')+' '+(i.data||'')+' '+i.key).toLowerCase().includes(q));
+  $('#lista').innerHTML = itens.map(i => `
+    <label class="row"><input type="checkbox" data-k="${esc(i.key)}" ${S.sel.has(String(i.key))?'checked':''}>
+      <span class="t"><b title="${esc(i.titulo)}">${esc(i.titulo)}</b><small>${pje ? esc(i.tipo)+' · ID '+esc(i.key) : 'Seção '+esc(i.key)}</small></span>
+      <span class="r">${pje ? '<span class="stars">'+stars(i.rel)+'</span> &nbsp;'+esc(i.data) : 'págs. '+esc(i.pag)}</span></label>`).join('')
+    || '<div style="padding:16px;color:var(--muted)">Nada encontrado.</div>';
+  contar();
+}
+function contar(){ $('#contagem').textContent = `${S.sel.size} de ${S.itens.length} selecionada(s)`; resumo(); }
+$('#lista').addEventListener('change', e => { const c=e.target; if(c.dataset.k===undefined) return; c.checked ? S.sel.add(c.dataset.k) : S.sel.delete(c.dataset.k); contar(); });
+$('#busca').oninput = renderLista;
+$('#bTodas').onclick = () => { const q=($('#busca').value||'').toLowerCase(); S.itens.forEach(i=>{ if(!q || (i.titulo+' '+(i.tipo||'')+' '+(i.data||'')+' '+i.key).toLowerCase().includes(q)) S.sel.add(String(i.key)); }); renderLista(); };
+$('#bNenhuma').onclick = () => { S.sel.clear(); renderLista(); };
+$('#bRel').onclick = () => { S.sel = new Set(S.itens.filter(i=>i.rel<=2).map(i=>String(i.key))); renderLista(); };
+
+/* ── jobs ── */
+function viewProg(titulo, indet){
+  show('#config', false); show('#sArquivo', false); show('#sDone', false); show('#sErr', false); show('#sProg');
+  $('#pTitulo').textContent = titulo; $('#pPct').textContent='0'; $('#pEtapa').textContent='Iniciando…'; $('#pTempo').textContent='';
+  $('#pBar > div').style.width='0'; $('#pBar').classList.toggle('indet', !!indet); $('#pLog').textContent='';
+  $('#btnCancel').disabled=false;
+}
+async function iniciar(url, titulo, aoConcluir, aoFalhar){
+  viewProg(titulo, false);
+  let id;
+  try{ id = (await api(url, cfg())).job; }catch(e){ return aoFalhar(e.message); }
+  S.job = id;
+  clearInterval(S.polling);
+  S.polling = setInterval(async ()=>{
+    let j; try{ j = await api('/api/jobs/'+id); }catch(e){ return; }
+    $('#pPct').textContent = Math.floor(j.pct);
+    $('#pBar > div').style.width = j.pct+'%';
+    $('#pEtapa').textContent = j.etapa;
+    const rest = j.pct>4 && j.pct<100 ? ` · restante ~${fmtT(j.decorrido*(100-j.pct)/j.pct)}` : '';
+    $('#pTempo').textContent = 'Decorrido ' + fmtT(j.decorrido) + rest;
+    $('#pLog').textContent = j.log.join('\n'); $('#pLog').scrollTop = 1e9;
+    if(j.status!=='running'){
+      clearInterval(S.polling); S.job=null;
+      if(j.status==='done') aoConcluir(j);
+      else if(j.status==='cancelled') aoFalhar(null);
+      else aoFalhar(j.erro || 'Falha na conversão.');
+    }
+  }, 600);
+}
+function voltarConfig(msg){
+  show('#sProg', false); show('#sDone', false); show('#sErr', false); show('#sArquivo'); show('#config');
+  if(msg){ show('#sErr'); $('#eMsg').textContent = msg; }
+}
+async function analisar(){
+  if(S.analisando) return; S.analisando=true;
+  const chave = chaveAnalise();
+  await iniciar('/api/analisar', S.tipo==='pje' ? 'Lendo o índice…' : (S.ocr ? 'Analisando com OCR…' : 'Analisando o documento…'),
+    j => { S.analisando=false; S.itens=j.resultado.itens; S.analisadoCfg=chave;
+           S.sel = new Set(S.tipo==='pje' ? S.itens.filter(i=>i.rel<=2).map(i=>String(i.key)) : S.itens.map(i=>String(i.key)));
+           voltarConfig(); atualizar(); setTimeout(()=>$('#sLista').scrollIntoView({behavior:'smooth',block:'start'}),50); },
+    msg => { S.analisando=false; S.escopo = 'integra'; voltarConfig(msg); aplicarTipo(false); });
+}
+$('#btnGo').onclick = () => {
+  iniciar('/api/converter', S.escopo==='selecao' ? 'Convertendo a seleção…' : 'Convertendo…',
+    j => { S.ultimoJob=j.id; mostrarConcluido(j); },
+    msg => { voltarConfig(msg); });
+};
+$('#btnCancel').onclick = () => { if(S.job){ api('/api/cancelar',{job:S.job}); $('#btnCancel').disabled=true; $('#pEtapa').textContent='Cancelando…'; } };
+$('#btnLog').onclick = () => { const l=$('#pLog'); l.classList.toggle('hidden'); $('#btnLog').textContent = l.classList.contains('hidden')?'Mostrar detalhes':'Ocultar detalhes'; };
+
+function mostrarConcluido(j){
+  show('#sProg', false); show('#sDone');
+  const r=j.resultado;
+  $('#dPath').textContent = r.saida;
+  $('#dStats').innerHTML = `<span><b>${r.chars.toLocaleString('pt-BR')}</b> caracteres</span><span>≈ <b>${r.tokens.toLocaleString('pt-BR')}</b> tokens</span><span>${esc(r.detalhe||'')}</span><span>em <b>${fmtT(j.decorrido)}</b></span>`;
+  $('#bAbrir').onclick = () => api('/api/abrir-arquivo',{job:j.id}).catch(e=>toast(e.message));
+  $('#bPasta').onclick = () => api('/api/abrir-pasta',{job:j.id}).catch(e=>toast(e.message));
+  $('#bCopiar').onclick = () => navigator.clipboard.writeText(r.saida).then(()=>toast('Caminho copiado'));
+}
+$('#bNovo').onclick = () => { descartar(); resetTudo(); };
+$('#bVoltar').onclick = () => { show('#sErr', false); };
+$('#bSair').onclick = async () => { if(confirm('Encerrar o servidor local? Será preciso abrir o conversor de novo.')){ await api('/api/encerrar',{}).catch(()=>{}); document.body.innerHTML='<div style="padding:60px;text-align:center;font:16px Segoe UI">Servidor encerrado. Pode fechar esta aba.</div>'; } };
+
+function resetTudo(){
+  S.up=null; S.itens=null; S.sel=new Set(); S.escopo='integra'; S.ocr=false; S.analisadoCfg=null; S.analisando=false;
+  show('#sProg', false); show('#sDone', false); show('#sErr', false); show('#config', false); show('#sArquivo');
+  show('#drop'); show('#fileBox', false); show('#upErr', false);
+  $('#escopo .opt.on')?.classList.remove('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+window.addEventListener('beforeunload', ()=>{ });
+</script>
+</body>
+</html>
