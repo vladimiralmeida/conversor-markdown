@@ -8,6 +8,26 @@ Interface web local para converter em Markdown:
 
 Tudo roda na sua máquina (`http://127.0.0.1:8477`); nenhum arquivo é enviado à internet. O resultado é salvo na pasta **Downloads**, com painel de progresso em percentual.
 
+## Telas
+
+*Capturas com dados fictícios.*
+
+**1. Escolha do arquivo** — arraste ou selecione PDF, DOCX e outros formatos.
+
+![Tela inicial](docs/telas/1-inicio.jpg)
+
+**2. Tipo, abrangência, OCR e seleção de peças** — com relevância em estrelas para processos do PJe.
+
+![Seleção de peças](docs/telas/2-selecao-de-pecas.jpg)
+
+**3. Acompanhamento da conversão** — percentual real, etapa, tempo restante e cancelamento.
+
+![Progresso](docs/telas/3-progresso.jpg)
+
+**4. Resultado** — arquivo `.md` salvo em Downloads.
+
+![Conversão concluída](docs/telas/4-concluido.jpg)
+
 ## Instalação (Windows)
 
 1. Instale o **Python 3.10+** (marque *Add python.exe to PATH*): <https://www.python.org/downloads/>

@@ -397,13 +397,13 @@ function resumo(){
 
 /* ── lista ── */
 $('#btnAnalisar').onclick = () => analisar();
-function stars(n){ return n===1?'★★★':n===2?'★★☆':'★☆☆'; }
+function stars(n){ const k=n===1?3:n===2?2:1; return '★'.repeat(k)+'<span style="opacity:.28">'+'★'.repeat(3-k)+'</span>'; }
 function renderLista(){
   const pje=S.tipo==='pje', q=($('#busca').value||'').toLowerCase();
   const itens = S.itens.filter(i => !q || (i.titulo+' '+(i.tipo||'')+' '+(i.data||'')+' '+i.key).toLowerCase().includes(q));
   $('#lista').innerHTML = itens.map(i => `
     <label class="row"><input type="checkbox" data-k="${esc(i.key)}" ${S.sel.has(String(i.key))?'checked':''}>
-      <span class="t"><b title="${esc(i.titulo)}">${esc(i.titulo)}</b><small>${pje ? esc(i.tipo)+' · ID '+esc(i.key) : 'Seção '+esc(i.key)}</small></span>
+      <span class="t"><b title="${esc(i.titulo)}">${esc(i.titulo)}</b><small>${pje ? (i.tipo ? esc(i.tipo)+' · ' : '')+'ID '+esc(i.key) : 'Seção '+esc(i.key)}</small></span>
       <span class="r">${pje ? '<span class="stars">'+stars(i.rel)+'</span> &nbsp;'+esc(i.data) : 'págs. '+esc(i.pag)}</span></label>`).join('')
     || '<div style="padding:16px;color:var(--muted)">Nada encontrado.</div>';
   contar();
