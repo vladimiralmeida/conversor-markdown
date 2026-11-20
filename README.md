@@ -31,3 +31,7 @@ Abra o atalho **Conversor para Markdown** (ou `iniciar.bat`). O navegador abre s
 | `pdf_md_engine.py` | Motor de conversão de PDFs genéricos (também funciona via linha de comando) |
 
 Desenvolvido por Vladimir Almeida com Claude Code em Novembro de 2026.
+
+## Licença
+
+[MIT](LICENSE) © 2026 Vladimir Almeida
