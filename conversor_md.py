@@ -182,6 +182,7 @@ class Up:
         self.path = path
         self.ext = path.suffix.lower()
         self.cache = {}
+        self.escaneado = False
         self.lock = threading.Lock()
 
 
@@ -236,7 +237,22 @@ def unico(p):
 
 
 def estimar(md_len):
-    return md_len // 4
+    return int(md_len / 3.5)  # português: ~3,5 caracteres por token (estimativa)
+
+
+# Tokens por página quando um PDF é enviado direto ao Claude (estimativa conservadora):
+# PDF com texto ≈ 1.500–3.000 por página (sem contar a imagem da página);
+# PDF digitalizado ≈ 1.200–2.000 por página (praticamente só imagem).
+TOK_PAG = {"texto": (1500, 3000), "digitalizado": (1200, 2000)}
+
+
+def economia(up, paginas, pecas=None):
+    if not paginas:
+        return None
+    esc = bool(getattr(up, "escaneado", False))
+    lo, hi = TOK_PAG["digitalizado" if esc else "texto"]
+    return {"paginas": paginas, "lo": paginas * lo, "hi": paginas * hi,
+            "digitalizado": esc, "pecas": pecas, "por_pagina": [lo, hi]}
 
 
 def total_paginas(path):
@@ -438,6 +454,12 @@ def converter_pje(job, up, p):
             "Nenhuma peça do PJe foi localizada no texto do PDF. "
             "Se o PDF for digitalizado, use a conversão com OCR.")
 
+    if sel:
+        mapa_pg = pje._mapear_paginas_por_doc(texto)
+        pg_orig = sum(len(mapa_pg.get(i, [])) for i in escolhidos)
+        pecas = [len(escolhidos), len(frag)]
+    else:
+        pg_orig, pecas = total_paginas(up.path), None
     job.set(94, "Montando o Markdown…")
     docs_info = info_docs_pje(up)
     md = pje.gerar_cabecalho_processo(texto)
@@ -452,7 +474,8 @@ def converter_pje(job, up, p):
     job.set(100, "Concluído")
     job.resultado = {"saida": str(out), "nome": out.name, "pasta": False,
                      "chars": len(md), "tokens": estimar(len(md)),
-                     "detalhe": f"{len(escolhidos)} documento(s)"}
+                     "detalhe": f"{len(escolhidos)} documento(s)",
+                     "economia": economia(up, pg_orig, pecas)}
 
 
 # ─────────────────────────────────────────────
@@ -549,7 +572,8 @@ def converter_pdf_generico(job, up, p):
         out = unico(DOWNLOADS / f"{stem}_conteudo.md")
         tam, tok = eng.gerar_integra(up.path, paginas, total, out, modo_desc)
         job.resultado = {"saida": str(out), "nome": out.name, "pasta": False, "chars": tam,
-                         "tokens": tok, "detalhe": f"{total} página(s)" + extra}
+                         "tokens": estimar(tam), "detalhe": f"{total} página(s)" + extra,
+                         "economia": economia(up, total)}
         return
 
     ids = {int(x) for x in p.get("selecao", [])}
@@ -560,12 +584,14 @@ def converter_pdf_generico(job, up, p):
         pasta = unico(DOWNLOADS / f"{stem}_capitulos")
         tam, tok = eng.gerar_selecionado_arquivo_por_capitulo(up.path, paginas, escolhidos, total, pasta, modo_desc)
         job.resultado = {"saida": str(pasta), "nome": pasta.name, "pasta": True, "chars": tam,
-                         "tokens": tok, "detalhe": f"{len(escolhidos)} arquivo(s) + índice" + extra}
+                         "tokens": estimar(tam), "detalhe": f"{len(escolhidos)} arquivo(s) + índice" + extra,
+                         "economia": economia(up, sum(c["pagina_fim"] - c["pagina_inicio"] + 1 for c in escolhidos), [len(escolhidos), len(caps)])}
     else:
         out = unico(DOWNLOADS / f"{stem}_selecionado.md")
         tam, tok = eng.gerar_selecionado_arquivo_unico(up.path, paginas, escolhidos, total, out, modo_desc)
         job.resultado = {"saida": str(out), "nome": out.name, "pasta": False, "chars": tam,
-                         "tokens": tok, "detalhe": f"{len(escolhidos)} capítulo(s)" + extra}
+                         "tokens": estimar(tam), "detalhe": f"{len(escolhidos)} capítulo(s)" + extra,
+                         "economia": economia(up, sum(c["pagina_fim"] - c["pagina_inicio"] + 1 for c in escolhidos), [len(escolhidos), len(caps)])}
 
 
 # ─────────────────────────────────────────────
@@ -903,6 +929,7 @@ class Handler(BaseHTTPRequestHandler):
         if ext == ".pdf":
             try:
                 info.update(detectar_pdf(destino))
+                up.escaneado = info["escaneado"]
             except Exception as e:
                 shutil.rmtree(pasta, ignore_errors=True)
                 return self._json({"erro": f"Não consegui abrir o PDF: {mensagem_erro(e)}"}, 422)

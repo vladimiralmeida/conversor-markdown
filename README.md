@@ -24,9 +24,13 @@ Tudo roda na sua máquina (`http://127.0.0.1:8477`); nenhum arquivo é enviado �
 
 ![Progresso](docs/telas/3-progresso.jpg)
 
-**4. Resultado** — arquivo `.md` salvo em Downloads.
+**4. Resultado** — arquivo `.md` salvo em Downloads, com gráfico de **economia estimada de tokens** (anel e barras) em relação a enviar o PDF direto ao Claude.
 
 ![Conversão concluída](docs/telas/4-concluido.jpg)
+
+### Como a economia de tokens é estimada
+
+O cálculo é local e conservador: PDF com texto ≈ 1.500–3.000 tokens por página (sem contar a imagem da página); PDF digitalizado ≈ 1.200–2.000 por página. O Markdown é estimado em ~3,5 caracteres por token. Na conversão de peças ou capítulos selecionados, a comparação considera apenas as páginas das peças escolhidas. São estimativas, não contagens exatas; o gráfico não aparece para DOCX e demais formatos de texto.
 
 ## Instalação (Windows)
 
